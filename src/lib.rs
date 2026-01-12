@@ -36,16 +36,19 @@ pub fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> 
     Ok(calendar.inner_html())
 }
 
-pub fn generate_svg(calendar_html: &str, css: &str) -> String {
+pub fn generate_svg(calendar_html: &str, css: &str, year: &str) -> String {
     format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450">
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500">
             <foreignObject width="100%" height="100%">
                 <div xmlns="http://www.w3.org/1999/xhtml">
                     <style>{}</style>
-                    <pre class="calendar">{}</pre>
+                    <div class="calendar-wrapper">
+                        <h2 class="year-title">Advent of Code {}</h2>
+                        <pre class="calendar">{}</pre>
+                    </div>
                 </div>
             </foreignObject>
         </svg>"#,
-        css, calendar_html
+        css, year, calendar_html
     )
 }

@@ -1,44 +1,41 @@
-use std::fs;
+extern crate shuttle_axum;
 
-use aoc_profile_tree::{generate_svg, get_calendar_html};
+use std::{borrow::Cow, collections::HashMap};
+
+use aoc_profile_tree::error::AocError;
+use axum::{extract::Query, response::IntoResponse};
 use chrono::{Datelike, Local};
-use clap::Parser;
 
-#[derive(Parser, Debug)]
-#[command(author, version, about)]
-struct Args {
-    #[arg(short, long, env = "AOC_YEAR")]
-    year: Option<String>,
+async fn render_handler(Query(params): Query<HashMap<String, String>>) -> Result<impl IntoResponse, AocError> {
+    let year: Cow<str> = params
+        .get("year")
+        .map(|s| Cow::Borrowed(s.as_str()))
+        .unwrap_or_else(|| Cow::Owned(current_year().to_string()));
 
-    #[arg(short, long, env = "AOC_SESSION")]
-    session: Option<String>,
+    let session = params
+        .get("session")
+        .ok_or(AocError::InvalidSession)?;
 
-    #[arg(short, long, default_value = "aoc_tree.svg")]
-    output: String,
-}
-
-fn main() {
-    let args = Args::parse();
+    let html = aoc_profile_tree::get_calendar_html(&year, &session)?;
     let css = include_str!("../assets/style.css");
+    let svg = aoc_profile_tree::generate_svg(&html, css, &year);
 
-    let session = args.session.expect("AOC_SESSION must be provided");
-    let year = args.year.unwrap_or_else(|| get_current_year().to_string());
-
-    match get_calendar_html(&year, &session) {
-        Ok(html) => {
-            let svg = generate_svg(&html, css);
-            fs::write(&args.output, svg)
-                .expect("unable to write file");
-            println!("Successfully generated tree for {}!", year);
-        }
-        Err(e) => {
-            eprintln!("error: {}", e);
-            std::process::exit(1);
-        }
-    }
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, "image/svg+xml"),
+            (axum::http::header::CACHE_CONTROL, "public, max-age=3600"),
+        ],
+        svg,
+    ))
 }
 
-fn get_current_year() -> i32 {
-    let now = Local::now();
-    now.year()
+#[shuttle_runtime::main]
+async fn main() -> shuttle_axum::ShuttleAxum {
+    let router = Router::new().route("/render", get(render_handler));
+    Ok(router.into())
+}
+
+fn current_year() -> i32 {
+    let localtime = Local::now();
+    localtime.year()
 }
