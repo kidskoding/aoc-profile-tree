@@ -3,12 +3,20 @@
     background: #0f0f23; 
     color: #cccccc; 
     padding: 20px; 
-    border-radius: 8px;
     line-height: 1.2;
 }
 
-.calendar-color-s { color: #ffff66; text-shadow: 0 0 5px #ffff66; } 
+.calendar-mark-complete, 
+.calendar-mark-verycomplete, 
+.calendar-color-s { 
+    color: #ffff66 !important; 
+    text-shadow: 0 0 5px #ffff66, 0 0 10px #ffff66 !important; 
+}
+
 .calendar-color-g { color: #009900; }
-.calendar-color-w { color: #ffffff; }
-.calendar-color-b { color: #3333ff; }
 .calendar-color-r { color: #ff0000; }
+.calendar-color-b { color: #3333ff; }
+.calendar-color-w { color: #ffffff; text-shadow: 0 0 2px #ffffff; }
+
+.calendar-day { color: #666666; }
+.calendar-day:hover { color: #ffffff; cursor: pointer; }
