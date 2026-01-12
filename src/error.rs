@@ -1,5 +1,5 @@
-use axum::response::{IntoResponse, Response};
 use reqwest::StatusCode;
+use vercel_runtime::Response;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,7 +7,7 @@ pub enum AocError {
     #[error("network error: {0}")]
     Network(#[from] reqwest::Error),
     
-    #[error("could not find the calendar art! Is your AOC_SESSION valid?")]
+    #[error("could not find the calendar art! is your AOC_SESSION valid?")]
     InvalidSession,
 
     #[error("failed to write the SVG file: {0}")]
@@ -17,16 +17,18 @@ pub enum AocError {
     MissingSessionCookie,
 }
 
-impl IntoResponse for AocError {
-    fn into_response(self) -> Response {
-        let (status, message) = match self {
-            AocError::InvalidSession | AocError::MissingSessionCookie => {
-                (StatusCode::UNAUTHORIZED, self.to_string())
-            }
-            AocError::Network(_) => (StatusCode::BAD_GATEWAY, self.to_string()),
-            AocError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
+impl AocError {
+    pub fn to_vercel_response(&self) -> Response<String> {
+        let status = match self {
+            AocError::InvalidSession | AocError::MissingSessionCookie => StatusCode::UNAUTHORIZED,
+            AocError::Network(_) => StatusCode::BAD_GATEWAY,
+            AocError::Io(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
-        (status, message).into_response()
+        Response::builder()
+            .status(status.as_u16())
+            .header("Content-Type", "text/plain")
+            .body(self.to_string())
+            .expect("failed to build error response")
     }
 }
