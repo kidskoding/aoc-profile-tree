@@ -3,10 +3,11 @@ extern crate shuttle_axum;
 use std::{borrow::Cow, collections::HashMap};
 
 use aoc_profile_tree::error::AocError;
-use axum::{extract::Query, response::IntoResponse};
+use axum::{Router, extract::Query, response::{IntoResponse, Response}, routing::get};
 use chrono::{Datelike, Local};
 
-async fn render_handler(Query(params): Query<HashMap<String, String>>) -> Result<impl IntoResponse, AocError> {
+#[axum::debug_handler]
+async fn render_handler(Query(params): Query<HashMap<String, String>>) -> Result<Response, AocError> {
     let year: Cow<str> = params
         .get("year")
         .map(|s| Cow::Borrowed(s.as_str()))
@@ -26,7 +27,7 @@ async fn render_handler(Query(params): Query<HashMap<String, String>>) -> Result
             (axum::http::header::CACHE_CONTROL, "public, max-age=3600"),
         ],
         svg,
-    ))
+    ).into_response())
 }
 
 #[shuttle_runtime::main]
