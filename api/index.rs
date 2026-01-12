@@ -10,15 +10,11 @@ async fn main() -> Result<(), vercel_runtime::Error> {
 }
 
 pub async fn handler(req: Request) -> Result<Response<String>, vercel_runtime::Error> {
-    let base_url = Url::parse("http://localhost").unwrap();
-    let parsed_url = base_url
-        .join(&req.uri().to_string())
-        .map_err(|e| vercel_runtime::Error::from(format!("invalid URI: {}", e)))?;
-
-    let hash_query: HashMap<String, String> = parsed_url
-        .query_pairs()
-        .into_owned()
-        .collect();
+    let url = format!("http://localhost{}", req.uri());
+    let hash_query: HashMap<String, String> = match Url::parse(&url) {
+        Ok(url) => url.query_pairs().into_owned().collect(),
+        Err(_) => HashMap::new(),
+    };
 
     let year = hash_query
         .get("year")
@@ -30,9 +26,9 @@ pub async fn handler(req: Request) -> Result<Response<String>, vercel_runtime::E
         Err(_) => return Ok(AocError::MissingSessionCookie.to_vercel_response()),
     };
 
-    let css = include_str!("../assets/style.css");
+    let css = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/style.css"));
 
-    match get_calendar_html(&year, &session) {
+    match get_calendar_html(&year, &session).await {
         Ok(html) => {
             let svg = generate_svg(&html, css, &year);
             Ok(Response::builder()

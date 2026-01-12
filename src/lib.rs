@@ -5,7 +5,7 @@ use scraper::{Html, Selector};
 
 use crate::error::AocError;
 
-pub fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> {
+pub async fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> {
     let url = format!("https://adventofcode.com/{}", year);
 
     let mut headers = HeaderMap::new();
@@ -14,20 +14,21 @@ pub fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> 
         format!("session={}", session).parse().unwrap()
     );
 
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .default_headers(headers)
         .user_agent("rust-aoc-profile-scraper-by-user")
         .build()?;
 
-    let response = client.get(url).send()?;
+    let response = client.get(url).send().await?;
     if !response.status().is_success() {
         return Err(AocError::InvalidSession);
     }
 
-    let html_content = response.text()?;
+    let html_content = response.text().await?;
     let document = Html::parse_document(&html_content);
 
-    let selector = Selector::parse("pre.calendar").map_err(|_| AocError::InvalidSession)?;
+    let selector = Selector::parse("pre.calendar")
+        .map_err(|_| AocError::InvalidSession)?;
 
     let calendar = document.select(&selector)
         .next()
