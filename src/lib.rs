@@ -1,8 +1,8 @@
 pub mod error;
 
+use std::time::Duration;
 use reqwest::header::{COOKIE, HeaderMap};
 use scraper::{Html, Selector};
-
 use crate::error::AocError;
 
 pub async fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> {
@@ -16,17 +16,25 @@ pub async fn get_calendar_html(year: &str, session: &str) -> Result<String, AocE
 
     let client = reqwest::Client::builder()
         .default_headers(headers)
-        .user_agent("rust-aoc-profile-scraper-by-user")
-        .build()?;
+        .user_agent("rust-aoc-profile-scraper")
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|_| AocError::InvalidSession)?;
 
-    let response = client.get(url).send().await?;
+    let response = client.get(url)
+        .send()
+        .await
+        .map_err(|_| AocError::InvalidSession)?;
+
     if !response.status().is_success() {
         return Err(AocError::InvalidSession);
     }
 
-    let html_content = response.text().await?;
-    let document = Html::parse_document(&html_content);
+    let html_content = response.text()
+        .await
+        .map_err(|_| AocError::InvalidSession)?;
 
+    let document = Html::parse_document(&html_content);
     let selector = Selector::parse("pre.calendar")
         .map_err(|_| AocError::InvalidSession)?;
 
