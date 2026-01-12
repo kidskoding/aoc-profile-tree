@@ -1,8 +1,10 @@
 pub mod error;
+pub mod state;
 
 use std::time::Duration;
 use reqwest::header::{COOKIE, HeaderMap};
 use scraper::{Html, Selector};
+
 use crate::error::AocError;
 
 pub async fn get_calendar_html(year: &str, session: &str) -> Result<String, AocError> {

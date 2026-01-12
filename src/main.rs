@@ -1,19 +1,34 @@
-use axum::{
-    extract::Query,
-    response::{Html, IntoResponse, Response},
-    routing::get,
-    Router,
-};
 use std::env;
 use std::collections::HashMap;
 
-use aoc_profile_tree::{error::AocError, generate_svg, get_calendar_html};
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::get,
+    Router,
+};
+use shuttle_runtime::SecretStore;
+
+use aoc_profile_tree::state::AppState;
+use aoc_profile_tree::{generate_svg, get_calendar_html};
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+async fn main(
+    #[shuttle_runtime::Secrets] secrets: SecretStore
+) -> shuttle_axum::ShuttleAxum {
+    let aoc_session = secrets
+        .get("AOC_SESSION")
+        .expect("AOC_SESSION must be set in Secrets.toml");
+
+    let state = AppState {
+        aoc_session: aoc_session.to_string(),
+    };
+
     let router = Router::new()
         .route("/", get(index))
-        .route("/render", get(render));
+        .route("/render", get(render))
+        .with_state(state);
 
     Ok(router.into())
 }
@@ -22,19 +37,15 @@ async fn index() -> &'static str {
     "binary built!"
 }
 
-async fn render(Query(params): Query<HashMap<String, String>>) -> Response {
-    let year = params.get("year").map(|s| s.as_str()).unwrap_or("2024");
-    
-    let session = match env::var("AOC_SESSION") {
-        Ok(s) => s,
-        Err(_) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                "missing AOC_SESSION cookie!"
-            ).into_response();
-        }
-    };
-
+async fn render(
+    State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
+    let year = params
+        .get("year")
+        .map(|s| s.as_str())
+        .unwrap_or("2025");
+    let session = &state.aoc_session;
     let css = include_str!("../assets/style.css");
 
     match get_calendar_html(year, &session).await {
@@ -49,7 +60,7 @@ async fn render(Query(params): Query<HashMap<String, String>>) -> Response {
         Err(e) => {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Error: {}", e)
+                format!("error: {}", e)
             ).into_response()
         }
     }

@@ -24,3 +24,6 @@ target
 .env
 .vercel
 .env*.local
+
+# Shuttle
+Secrets.toml
