@@ -1,0 +1,14 @@
+.calendar { 
+    font-family: 'Source Code Pro', monospace; 
+    background: #0f0f23; 
+    color: #cccccc; 
+    padding: 20px; 
+    border-radius: 8px;
+    line-height: 1.2;
+}
+
+.calendar-color-s { color: #ffff66; text-shadow: 0 0 5px #ffff66; } 
+.calendar-color-g { color: #009900; }
+.calendar-color-w { color: #ffffff; }
+.calendar-color-b { color: #3333ff; }
+.calendar-color-r { color: #ff0000; }

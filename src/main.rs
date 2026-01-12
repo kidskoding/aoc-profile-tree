@@ -1,3 +1,31 @@
+use std::fs;
+
+use aoc_profile_tree::{generate_svg, get_calendar_html};
+use chrono::{Datelike, Local};
+use std::env::Args;
+
 fn main() {
-    println!("Hello, world!");
+    let args = Args::parse;
+    let css = include_str!("../assets/style.css");
+
+    let session = args.session.expect("AOC_SESSION must be provided");
+    let year = args.year.unwrap_or_else(|| get_current_year().to_string());
+
+    match get_calendar_html(&year, &session) {
+        Ok(html) => {
+            let svg = generate_svg(&html, css);
+            fs::write(&args.output, svg)
+                .expect("unable to write file");
+            println!("Successfully generated tree for {}!", year);
+        }
+        Err(e) => {
+            eprintln!("error: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn get_current_year() -> i32 {
+    let now = Local::now();
+    now.year()
 }
